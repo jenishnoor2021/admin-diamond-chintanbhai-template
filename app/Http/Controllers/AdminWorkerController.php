@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use Validator;
 use App\Models\Worker;
 use App\Models\Process;
+use App\Models\WorkerRate;
 use App\Models\Designation;
 use App\Models\Workerrange;
-use App\Models\WorkerRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\DesignationWiseRate;
 use Illuminate\Support\Facades\Redirect;
 
 class AdminWorkerController extends Controller
@@ -48,12 +49,18 @@ class AdminWorkerController extends Controller
     {
         $input = $request->all();
         $validator = Validator::make($request->all(), [
-            'fname' => 'required|unique:workers,fname',
+            'fname' => [
+                'required',
+                'unique:workers,fname',
+                'regex:/^\S+$/',
+            ],
             'lname' => 'required',
             'designation' => 'required',
             // 'address' => 'required',
             // 'mobile' => 'required',
             // 'aadhar_no' => 'required',
+        ], [
+            'fname.regex' => 'The first name must not contain spaces.',
         ]);
 
         if ($validator->fails()) {
@@ -151,12 +158,18 @@ class AdminWorkerController extends Controller
         $input = $request->all();
 
         $validator = Validator::make($request->all(), [
-            'fname' => 'required|unique:workers,fname,' . $worker->id,
+            'fname' => [
+                'required',
+                'unique:workers,fname,' . $id,
+                'regex:/^\S+$/', // no spaces allowed
+            ],
             'lname' => 'required',
             'designation' => 'required',
             // 'address' => 'required',
             // 'mobile' => 'required',
             // 'aadhar_no' => 'required',
+        ], [
+            'fname.regex' => 'The first name must not contain spaces.',
         ]);
 
         if ($validator->fails()) {
@@ -240,5 +253,20 @@ class AdminWorkerController extends Controller
         }
         $worker->save();
         return redirect()->back()->with('success', "update Record Successfully");
+    }
+
+    public function getRates(Request $request)
+    {
+        $designation = $request->get('designation');
+
+        $designationData = Designation::where('name', $designation)->first();
+
+        if (!$designationData) {
+            return response()->json([]);
+        }
+
+        $rates = DesignationWiseRate::where('designation_id', $designationData->id)->pluck('value', 'range_key');
+
+        return response()->json($rates);
     }
 }

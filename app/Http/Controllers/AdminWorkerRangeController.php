@@ -8,6 +8,7 @@ use App\Models\WorkerRate;
 use App\Models\Workerrange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\DesignationWiseRate;
 use Illuminate\Support\Facades\Redirect;
 
 class AdminWorkerRangeController extends Controller
@@ -164,6 +165,7 @@ class AdminWorkerRangeController extends Controller
 
             // Remove only related PartyRate
             WorkerRate::whereIn('key', [$workerRange->key])->delete();
+            DesignationWiseRate::whereIn('range_key', [$workerRange->key])->delete();
 
             return redirect()->back()->with('success', "Deleted last record of shape {$workerRange->shape}.");
         } else {
@@ -174,6 +176,7 @@ class AdminWorkerRangeController extends Controller
 
             // Delete all PartyRate records that have matching keys
             WorkerRate::whereIn('key', $keysToDelete)->delete();
+            DesignationWiseRate::whereIn('range_key', $keysToDelete)->delete();
 
             return redirect()->back()->with('success', "Deleted all records of shape {$workerRange->shape} after ID $id.");
         }

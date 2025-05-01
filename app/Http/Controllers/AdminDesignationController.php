@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use Validator;
+use App\Models\Worker;
+use App\Models\Process;
 use App\Models\WorkerRate;
 use App\Models\Designation;
-use App\Models\Process;
-use App\Models\Worker;
+use App\Models\Workerrange;
 use Illuminate\Http\Request;
+use App\Models\DesignationWiseRate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 
 class AdminDesignationController extends Controller
@@ -42,8 +45,14 @@ class AdminDesignationController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
+            'name' => [
+                'required',
+                'unique:designations,name',
+                'regex:/^\S+$/',
+            ],
             'category' => 'required',
+        ], [
+            'name.regex' => 'The name must not contain spaces.',
         ]);
 
         if ($validator->fails()) {
@@ -74,8 +83,11 @@ class AdminDesignationController extends Controller
      */
     public function edit($id)
     {
+        $roundworkerrangs = Workerrange::where('shape', 'Round')->get();
+        $otherworkerrangs = Workerrange::where('shape', 'Other')->get();
+        $designationWiseRate = DesignationWiseRate::where('designation_id', $id)->pluck('value', 'range_key');
         $designation = Designation::findOrFail($id);
-        return view('admin.designation.edit', compact('designation'));
+        return view('admin.designation.edit', compact('designation', 'roundworkerrangs', 'otherworkerrangs', 'designationWiseRate'));
     }
 
     /**
@@ -87,9 +99,17 @@ class AdminDesignationController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $input = $request->all();
+
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
+            'name' => [
+                'required',
+                'unique:designations,name,' . $id,
+                'regex:/^\S+$/',
+            ],
             'category' => 'required',
+        ], [
+            'name.regex' => 'The name must not contain spaces.',
         ]);
 
         if ($validator->fails()) {
@@ -110,7 +130,46 @@ class AdminDesignationController extends Controller
             $worker->update(['designation' => $request->name]);
         }
 
-        $designation->update($request->all());
+        $designationData = collect($input)->only(['category', 'name', 'rate_apply_on'])->toArray();
+
+        $designation->update($designationData);
+
+        DB::table('designation_wise_rates')->where('designation_id', $id)->delete();
+
+        $designationWiseRatesData = [];
+
+        $roundWorkerRanges = Workerrange::where('shape', 'Round')->get();
+        foreach ($roundWorkerRanges as $roundWorkerRange) {
+            $key = $roundWorkerRange->key;
+            $value = $input[$key] ?? $roundWorkerRange->value; // Default to '1' if not provided
+
+            $designationWiseRatesData[] = [
+                'designation_id' => $id,
+                'range_key' => $key,
+                'value' => $value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        $otherWorkersRanges = Workerrange::where('shape', 'Other')->get();
+        foreach ($otherWorkersRanges as $otherWorkersRange) {
+            $key = $otherWorkersRange->key;
+            $value = $input[$key] ?? $otherWorkersRange->value; // Default to '1' if not provided
+
+            $designationWiseRatesData[] = [
+                'designation_id' => $id,
+                'range_key' => $key,
+                'value' => $value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($designationWiseRatesData)) {
+            DB::table('designation_wise_rates')->insert($designationWiseRatesData);
+        }
+
         return redirect('admin/designation')->with('success', "Update Record Successfully");
     }
 
@@ -135,6 +194,8 @@ class AdminDesignationController extends Controller
         // foreach ($workers as $worker) {
         //     $worker->delete();
         // }
+
+        DB::table('designation_wise_rates')->where('designation_id', $id)->delete();
 
         $designation->delete();
 

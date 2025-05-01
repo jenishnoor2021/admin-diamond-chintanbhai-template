@@ -105,10 +105,10 @@
                         @foreach ($designations as $designation)
                         <tr>
                             <td>
-                                @if ($designation->name != 'Grading')
                                 <a href="{{ route('admin.designation.edit', $designation->id) }}"
                                     class="btn btn-outline-primary waves-effect waves-light"><i
                                         class="fa fa-edit"></i></a>
+                                @if ($designation->name != 'Grading')
                                 <a href="{{ route('admin.designation.destroy', $designation->id) }}"
                                     onclick="return confirm('Sure ! You want to delete ?');"
                                     class="btn btn-outline-danger waves-effect waves-light"><i

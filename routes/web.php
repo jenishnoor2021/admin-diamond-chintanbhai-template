@@ -311,6 +311,8 @@ Route::group(['middleware' => ['auth', 'usersession']], function () {
     Route::patch('admin/worker_range/update/{id}', [AdminWorkerRangeController::class, 'update'])->name('admin.worker_range.update');
     Route::get('admin/worker_range/destroy/{id}', [AdminWorkerRangeController::class, 'destroy'])->name('admin.worker_range.destroy');
     Route::get('/get-worker-min-value', [AdminWorkerRangeController::class, 'getMinValue'])->name('getWorkerMinValue');
+
+    Route::get('/designation/get-rates', [AdminWorkerController::class, 'getRates'])->name('designation.getRates');
 });
 
 //Clear Cache facade value:
