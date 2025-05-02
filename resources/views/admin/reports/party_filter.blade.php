@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use App\Models\Process;
 ?>
 @extends('layouts.admin')
 @section('content')
@@ -11,11 +12,11 @@ use Carbon\Carbon;
             <h4 class="mb-sm-0 font-size-18">Party Filter</h4>
 
             <!-- <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="javascript: void(0);">Forms</a></li>
-                    <li class="breadcrumb-item active">Party Filter</li>
-                </ol>
-            </div> -->
+                                                <ol class="breadcrumb m-0">
+                                                    <li class="breadcrumb-item"><a href="javascript: void(0);">Forms</a></li>
+                                                    <li class="breadcrumb-item active">Party Filter</li>
+                                                </ol>
+                                            </div> -->
 
         </div>
     </div>
@@ -131,8 +132,10 @@ use Carbon\Carbon;
                 </form>
             </div>
         </div>
-
         @if (count($dimonds) > 0)
+        <div>
+            Total Diamond = <?= count($dimonds) ?>
+        </div>
         @foreach ($partyLists as $partyList)
         <div class="card">
             <div class="card-body">
@@ -146,9 +149,14 @@ use Carbon\Carbon;
                 @endphp
 
                 @if (count($dimondsForParty) > 0)
-                <table id="partyFTable" class="table table-bordered dt-responsive nowrap w-100 mt-3">
+                <div>
+                    Total Weight = <?= $dimonds->where('parties_id', $partyList->id)->sum('weight') ?>
+                </div>
+                <table id="partyFTable"
+                    class="table table-bordered dt-responsive nowrap w-100 mt-3 partyFTable">
                     <thead>
                         <tr>
+                            <th></th>
                             <th>Action</th>
                             <th>Party Code</th>
                             <th>Dimond Name</th>
@@ -169,10 +177,15 @@ use Carbon\Carbon;
                     </thead>
                     <tbody>
                         @foreach ($dimondsForParty as $index => $dimond)
+                        <?php
+                        $processes = Process::where(['dimonds_barcode' => $dimond->barcode_number, 'dimonds_id' => $dimond->id])->get();
+                        ?>
                         <tr>
+                            <td></td>
                             <td>
-                                <a href="{{ route('admin.dimond.show', $dimond->barcode_number) }}"
-                                    class="btn btn-outline-primary waves-effect waves-light"><i class="fa fa-eye"></i>
+                                <a href="javascript:void(0);"
+                                    onclick="viewProcesses({{ $dimond->id }}, '{{ $dimond->barcode_number }}')">
+                                    <i class="fa fa-eye"></i>
                                 </a>
                             </td>
                             <td>{{ $dimond->parties->party_code }}</td>
@@ -203,7 +216,6 @@ use Carbon\Carbon;
             </div>
         </div>
         @endforeach
-
         @elseif(request()->party_id != '')
         <div class="row">
             <div class="col-lg-12">
@@ -219,24 +231,61 @@ use Carbon\Carbon;
     </div>
 </div>
 <!-- end row -->
+
+<div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Process Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="processModalBody" style="overflow-x:scroll">
+                <!-- AJAX content loads here -->
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('script')
 <script>
     $(document).ready(function() {
-        $(".partyFTable").DataTable({
-            dom: 'Blfrtip',
-            buttons: [{
-                    extend: 'pdf',
-                },
-                {
-                    extend: 'csv',
-                },
-                {
-                    extend: 'excel',
-                }
-            ]
+        $(".partyFTable").each(function() {
+            $(this).DataTable({
+                dom: 'Blfrtip',
+                buttons: [{
+                        extend: 'pdf'
+                    },
+                    {
+                        extend: 'csv'
+                    },
+                    {
+                        extend: 'excel'
+                    }
+                ]
+            });
         });
     });
+</script>
+<script>
+    function viewProcesses(dimondId, barcode) {
+        $.ajax({
+            url: '/get-process-details', // define this route in your web.php
+            method: 'POST',
+            data: {
+                dimond_id: dimondId,
+                barcode_number: barcode,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                $('#processModalBody').html(response);
+                $('#processModal').modal('show');
+            },
+            error: function() {
+                alert('Failed to load process details.');
+            }
+        });
+    }
 </script>
 @endsection

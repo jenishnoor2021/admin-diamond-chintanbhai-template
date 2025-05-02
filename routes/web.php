@@ -313,6 +313,7 @@ Route::group(['middleware' => ['auth', 'usersession']], function () {
     Route::get('/get-worker-min-value', [AdminWorkerRangeController::class, 'getMinValue'])->name('getWorkerMinValue');
 
     Route::get('/designation/get-rates', [AdminWorkerController::class, 'getRates'])->name('designation.getRates');
+    Route::post('/get-process-details', [AdminExpenceController::class, 'getProcessDetails']);
 });
 
 //Clear Cache facade value:
