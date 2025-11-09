@@ -49,6 +49,20 @@
             </li>
 
             <li>
+                <a href="/admin/bulk-issue" class="waves-effect">
+                    <i class="bx bx-pulse"></i>
+                    <span key="t-chat">Bulk Issue</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/admin/bulk-return" class="waves-effect">
+                    <i class="bx bx-pulse"></i>
+                    <span key="t-chat">Bulk Return</span>
+                </a>
+            </li>
+
+            <li>
                 <a href="/admin/expense" class="waves-effect">
                     <i class="bx bx-pulse"></i>
                     <span key="t-chat">Expense</span>

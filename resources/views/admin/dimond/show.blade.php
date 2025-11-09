@@ -332,7 +332,7 @@
                                 <label for="r_shape">Shape</label>
                                 <input type="text" name="r_shape"
                                     class="form-control"
-                                    value="{{ $barcodeDetail->shape }}" disabled>
+                                    value="{{ $barcodeDetail->shape }}" readonly>
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -569,6 +569,7 @@
     $(document).ready(function() {
         $('#designation').change(function() {
             var designation = $(this).val();
+            $('#worker_name').empty();
 
             if (designation) {
                 $.ajax({
@@ -580,7 +581,6 @@
                         'dimond_id': <?= $barcodeDetail->id ?>
                     },
                     success: function(data) {
-                        $('#worker_name').empty();
                         $.each(data, function(key, value) {
                             $('#worker_name').append('<option value="' + value.fname + '">' + value.fname + ' ' + value.lname + '</option>');
                         });
@@ -645,6 +645,8 @@
         });
         $('#designatio' + id).change(function() {
             var designation = $(this).val();
+            $('#worker_nam' + id).empty();
+
             if (designation) {
                 $.ajax({
                     type: 'POST',
@@ -654,7 +656,6 @@
                         'designation': designation
                     },
                     success: function(data) {
-                        $('#worker_nam' + id).empty();
                         $.each(data, function(key, value) {
                             $('#worker_nam' + id).append('<option value="' + value.fname +
                                 '">' + value.fname + ' ' + value.lname + '</option>');

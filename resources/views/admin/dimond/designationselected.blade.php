@@ -73,12 +73,14 @@ use App\Models\Process;
             @foreach($dailys as $index =>$dimond)
             <tr>
               <td>
+                @if($dimond->dimonds)
                 <a href="{{route('admin.dimond.show', $dimond->dimonds_barcode)}}" class="btn btn-info"><i class="fa fa-eye"></i></a>
+                @endif
               </td>
-              <td>{{$dimond->dimonds->dimond_name}}</td>
+              <td>{{$dimond->dimonds?->dimond_name}}</td>
               <td>{{$dimond->dimonds_barcode}}</td>
               <td>{{ \Carbon\Carbon::parse($dimond->updated_at)->format('d-m-Y') }}</td>
-              <td>{{$dimond->dimonds->status}}</td>
+              <td>{{$dimond->dimonds?->status}}</td>
             </tr>
             @endforeach
           </tbody>

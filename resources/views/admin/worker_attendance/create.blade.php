@@ -33,7 +33,7 @@
                 @csrf
 
                 <div class="row">
-                    <div class="col-md-2">
+                    <div class="col-lg-2">
                         <div class="mb-3">
                             <label for="worker_id">Worker</label>
                             <select name="worker_id" id="worker_id" class="form-select" required>
@@ -48,7 +48,7 @@
                             @endif
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2">
                         <div class="mb-3">
                             <label for="date">Date</label>
                             <input type="date" name="date" class="form-control"
@@ -58,7 +58,7 @@
                             @endif
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2">
                         <div class="mb-3">
                             <label for="check_in">Check In time</label>
                             <input type="datetime-local" name="check_in" class="form-control"

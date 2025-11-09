@@ -303,8 +303,11 @@ use App\Models\Process;
     $(document).ready(function() {
         $('#designation').change(function() {
             var designation = $(this).val();
+            $('#worker_name').empty();
+
             if (designation == 'all') {
-                $('#worker_name').append('<option value="all" selected>ALL</option>');
+                $('#worker_name').append('<option value="">Select worker</option>');
+                $('#worker_name').append('<option value="all">ALL</option>');
             } else if (designation && designation != 'all') {
                 $.ajax({
                     type: 'POST',
@@ -314,10 +317,8 @@ use App\Models\Process;
                         'designation': designation,
                     },
                     success: function(data) {
-                        $('#worker_name').empty();
-                        $('#worker_name').append(
-                            '<option value="">Select worker</option><option value="all">ALL</option>'
-                        );
+                        $('#worker_name').append('<option value="">Select worker</option>');
+                        $('#worker_name').append('<option value="all">ALL</option>');
                         $.each(data, function(key, value) {
                             $('#worker_name').append('<option value="' + value
                                 .fname + '">' + value.fname + ' ' + value
@@ -326,11 +327,15 @@ use App\Models\Process;
                     }
                 });
             } else {
-                $('#worker_name').empty();
+                $('#worker_name').append('<option value="">Select worker</option>');
             }
         });
         $('#category').change(function() {
             var category = $(this).val();
+            $('#designation').empty();
+            $('#worker_name').empty();
+            $('#worker_name').append('<option value="">Select worker</option>');
+
             if (category) {
                 $.ajax({
                     type: 'POST',
@@ -340,10 +345,8 @@ use App\Models\Process;
                         'category': category,
                     },
                     success: function(data) {
-                        $('#designation').empty();
-                        $('#designation').append(
-                            '<option value="">Select designation</option><option value="all">ALL</option>'
-                        );
+                        $('#designation').append('<option value="">Select designation</option>');
+                        $('#designation').append('<option value="all">ALL</option>');
                         $.each(data, function(key, value) {
                             $('#designation').append('<option value="' + value
                                 .name + '">' + value.name + '</option>');
@@ -351,7 +354,7 @@ use App\Models\Process;
                     }
                 });
             } else {
-                $('#designation').empty();
+                $('#designation').append('<option value="">Select designation</option>');
             }
         });
     });

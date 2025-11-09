@@ -84,15 +84,15 @@ use App\Models\Process;
                                 <select name="worker_name" id="worker_name" class="form-select" required>
                                     <option value="">Select worker</option>
                                     <!-- <option value="all" {{ request()->worker_name == 'all' ? 'selected' : '' }}>ALL</option> -->
-                                    @foreach ($workerLists as $workerList)
+                                    <!-- @foreach ($workerLists as $workerList)
                                     <option value="{{ $workerList->fname }}"
                                         {{ request()->worker_name == $workerList->fname ? 'selected' : '' }}>
                                         {{ $workerList->fname }}&nbsp;&nbsp;{{ $workerList->lname }}
                                     </option>
-                                    @endforeach
+                                    @endforeach -->
                                 </select>
-                                @if ($errors->has('party_id'))
-                                <div class="error text-danger">{{ $errors->first('party_id') }}</div>
+                                @if ($errors->has('worker_name'))
+                                <div class="error text-danger">{{ $errors->first('worker_name') }}</div>
                                 @endif
                             </div>
 
@@ -206,7 +206,10 @@ use App\Models\Process;
     $(document).ready(function() {
         $('#designation').change(function() {
             var designation = $(this).val();
+            $('#worker_name').empty();
+
             if (designation == 'all') {
+                $('#worker_name').append('<option value="">Select worker</option>');
                 $('#worker_name').append('<option value="all" selected>ALL</option>');
             } else if (designation && designation != 'all') {
                 $.ajax({
@@ -217,7 +220,6 @@ use App\Models\Process;
                         'designation': designation,
                     },
                     success: function(data) {
-                        $('#worker_name').empty();
                         // $('#worker_name').append('<option value="">Select worker</option><option value="all">ALL</option>');
                         $.each(data, function(key, value) {
                             $('#worker_name').append('<option value="' + value
@@ -227,11 +229,15 @@ use App\Models\Process;
                     }
                 });
             } else {
-                $('#worker_name').empty();
+                $('#worker_name').append('<option value="">Select worker</option>');
             }
         });
         $('#category').change(function() {
             var category = $(this).val();
+            $('#designation').empty();
+            $('#worker_name').empty();
+            $('#worker_name').append('<option value="">Select worker</option>');
+
             if (category) {
                 $.ajax({
                     type: 'POST',
@@ -241,7 +247,6 @@ use App\Models\Process;
                         'category': category,
                     },
                     success: function(data) {
-                        $('#designation').empty();
                         // $('#designation').append('<option value="">Select designation</option><option value="all">ALL</option>');
                         $.each(data, function(key, value) {
                             $('#designation').append('<option value="' + value
@@ -250,7 +255,7 @@ use App\Models\Process;
                     }
                 });
             } else {
-                $('#designation').empty();
+                $('#designation').append('<option value="">Select designation</option>');
             }
         });
     });

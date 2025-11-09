@@ -8,10 +8,12 @@ use App\Models\Dimond;
 use App\Models\Worker;
 use App\Models\Process;
 use App\Models\PartyRate;
+use App\Models\Partyrange;
 use App\Models\WorkerRate;
 use App\Models\Designation;
-use App\Models\Partyrange;
+use App\Models\Workerrange;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Redirect;
 
@@ -118,7 +120,7 @@ class AdminProcessController extends Controller
             $get_rate = 0;
 
             if ($dimonds->shape == 'Round') {
-                $WorkerRange = Partyrange::where('shape', 'Round')
+                $WorkerRange = Workerrange::where('shape', 'Round')
                     ->where('min_value', '<', $weight)
                     ->where('max_value', '>=', $weight)
                     ->first();
@@ -138,7 +140,7 @@ class AdminProcessController extends Controller
             }
 
             if ($dimonds->shape != 'Round') {
-                $WorkerRange = Partyrange::where('shape', 'Other')
+                $WorkerRange = Workerrange::where('shape', 'Other')
                     ->where('min_value', '<', $weight)
                     ->where('max_value', '>=', $weight)
                     ->first();
@@ -388,5 +390,298 @@ class AdminProcessController extends Controller
         // $daily = Daily::where('dimonds_id', $process->dimonds_id)->first();
         // $daily->delete();
         return Redirect::back()->with('success', "Deleted Record Successfully");
+    }
+
+    public function bulkIssue(Request $request)
+    {
+        $designations = Designation::get();
+        $workerLists = Worker::where('is_active', 1)->get();
+
+        return view('admin.reports.bulk_issue', compact('workerLists', 'designations'));
+    }
+
+    public function checkDiamondStatus(Request $request)
+    {
+        $barcode = $request->barcode;
+
+        // Step 1: Find diamond by barcode
+        $diamond = Dimond::where('barcode_number', $barcode)->first();
+
+        if (!$diamond) {
+            return response()->json(['status' => 'error', 'message' => 'Diamond not found.']);
+        }
+
+        // Step 2: Check diamond not delivered
+        if (strtoupper($diamond->status) == 'DELIVERED') {
+            return response()->json(['status' => 'error', 'message' => 'This diamond is already delivered.']);
+        }
+
+        // Step 3: Check last process entry
+        $lastProcess = Process::where('dimonds_id', $diamond->id)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastProcess && (empty($lastProcess->return_date) || empty($lastProcess->return_weight))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This diamond is already issued and not yet returned.'
+            ]);
+        }
+
+        // 5️⃣ Determine issue weight
+        if ($lastProcess && !empty($lastProcess->return_weight)) {
+            $issueWeight = $lastProcess->return_weight; // from process table
+        } else {
+            $issueWeight = $diamond->weight; // from diamond table
+        }
+
+        // Step 4: If all good, return success with diamond info
+        // return response()->json([
+        //     'status' => 'success',
+        //     'data' => $diamond
+        // ]);
+
+        // 6️⃣ Return all details
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'id' => $diamond->id,
+                'barcode_number' => $diamond->barcode_number,
+                'dimond_name' => $diamond->dimond_name,
+                // 'status' => $diamond->status,
+                // 'shape' => $diamond->shape,
+                // 'weight' => $diamond->weight,
+                'issue_weight' => $issueWeight, // ✅ your calculated issue weight
+            ]
+        ]);
+    }
+
+    public function storeBulkIssue(Request $request)
+    {
+        $request->validate([
+            'category' => 'required',
+            'designation' => 'required',
+            'worker_name' => 'required',
+            'issue_date' => 'required|date',
+            'diamonds' => 'required|array|min:1',
+        ], [
+            'category.required' => 'Please select a category.',
+            'designation.required' => 'Please choose a designation.',
+            'worker_name.required' => 'Please select a worker.',
+            'issue_date.required' => 'Please select the issue date.',
+            'diamonds.required' => 'Please scan at least one diamond before saving.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            foreach ($request->diamonds as $diamondId) {
+                $issueWeight = $request->issue_weights[$diamondId] ?? null;
+                $barcode = $request->barcode_number[$diamondId] ?? null;
+
+                // 1️⃣ Create new process entry
+                Process::create([
+                    'dimonds_id' => $diamondId,
+                    'dimonds_barcode' => $barcode,
+                    'designation' => $request->designation,
+                    'worker_name' => $request->worker_name,
+                    'issue_date' => $request->issue_date,
+                    'issue_weight' => $issueWeight,
+                    // 'return_date' => null,
+                    // 'return_weight' => null,
+                    // 'status' => 'ISSUED',
+                ]);
+
+                // 2️⃣ Update diamond status
+                // Dimond::where('id', $diamondId)->update(['status' => 'ISSUED']);
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Diamonds issued successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error issuing diamonds: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkReturn()
+    {
+        return view('admin.reports.bulk_return');
+    }
+
+    public function checkDiamondStatusReturn(Request $request)
+    {
+        $barcode = $request->barcode;
+
+        $diamond = Dimond::where('barcode_number', $barcode)->first();
+
+        if (!$diamond) {
+            return response()->json(['status' => 'error', 'message' => 'Diamond not found.']);
+        }
+
+        // get last process record
+        $lastProcess = Process::where('dimonds_id', $diamond->id)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        // if never issued
+        if (!$lastProcess || !empty($lastProcess->return_date) || !empty($lastProcess->return_weight)) {
+            return response()->json(['status' => 'error', 'message' => 'This diamond is not issued.']);
+        }
+
+        // if issued in grading
+        if (strtoupper($lastProcess->designation) === 'GRADING') {
+            return response()->json(['status' => 'error', 'message' => 'This diamond is issued in grading process.']);
+        }
+
+        // prepare data for return table
+        $data = [
+            'id' => $diamond->id,
+            'barcode_number' => $diamond->barcode_number,
+            'dimond_name' => $diamond->dimond_name,
+            'issue_weight' => $lastProcess->issue_weight,
+        ];
+
+        return response()->json(['status' => 'success', 'data' => $data]);
+    }
+
+    public function storeBulkReturn(Request $request)
+    {
+        $request->validate([
+            'diamonds' => 'required|array|min:1',
+            'return_dates' => 'required|array',
+            'return_weights' => 'required|array',
+        ]);
+
+        // dd($request->all());
+
+        DB::beginTransaction();
+        try {
+            foreach ($request->diamonds as $diamondId) {
+                $returnDate = $request->return_dates[$diamondId] ?? now();
+                $returnWeight = $request->return_weights[$diamondId] ?? null;
+
+                $process = Process::where('dimonds_id', $diamondId)->orderBy('id', 'desc')->first();
+                if (!$process) continue;
+
+                $dimonds = Dimond::where('id', $process->dimonds_id)->first();
+                $i_weight = $process->issue_weight;
+                $r_weight = $returnWeight;
+
+                $diffrence = $i_weight - $r_weight;
+                $weight = $i_weight;
+
+                $designation = Designation::where('name', $process->designation)->first();
+
+                if ($designation->rate_apply_on == 'return_weight' || $designation->rate_apply_on == 'ready_to_ruff_weight') {
+                    $weight = $r_weight;
+                }
+                if ($designation->rate_apply_on == 'diff_weight') {
+                    $weight = $diffrence;
+                }
+
+                $rate_cut = $request->has('ratecut') ? (($request->ratecut != null) ? 1 : 0) : 0;
+                $getWorker = Worker::where('fname', $process->worker_name)
+                    ->where('designation', $process->designation)
+                    ->first();
+
+                $get_rate = 0;
+
+                if ($dimonds->shape == 'Round') {
+                    $WorkerRange = Workerrange::where('shape', 'Round')
+                        ->where('min_value', '<', $weight)
+                        ->where('max_value', '>=', $weight)
+                        ->first();
+                } else {
+                    $WorkerRange = Workerrange::where('shape', 'Other')
+                        ->where('min_value', '<', $weight)
+                        ->where('max_value', '>=', $weight)
+                        ->first();
+                }
+
+                if ($WorkerRange) {
+                    $getkey = $WorkerRange->key;
+                    $workerrate = WorkerRate::where('key', $getkey)
+                        ->where('workers_id', $getWorker->id)
+                        ->first();
+
+                    if ($workerrate) {
+                        $get_rate = $workerrate->value;
+                    }
+                    if ($get_rate == 0) {
+                        $get_rate = $WorkerRange->value;
+                    }
+                }
+
+                $getpdata = Process::where([
+                    'dimonds_id' => $process->dimonds_id,
+                    'designation' => $process->designation,
+                ])->get();
+
+                $datas = $getpdata->pluck('id');
+                $currentIdIndex = $datas->search($process->id);
+                $previousId = ($currentIdIndex !== false && $currentIdIndex > 0)
+                    ? $datas->get($currentIdIndex - 1)
+                    : null;
+                $previousdata = $previousId ? Process::find($previousId) : null;
+
+                if ($designation->rate_apply_on == 'ready_to_ruff_weight') {
+                    $getFirstProcess = Process::where('dimonds_id', $process->dimonds_id)
+                        ->where('designation', $process->designation)
+                        ->first();
+                    $weight = $getFirstProcess->issue_weight;
+                }
+
+                if ($rate_cut == 1) {
+                    $price = 0;
+                    Process::where(['dimonds_barcode' => $process->dimonds_barcode, 'worker_name' => $process->worker_name])
+                        ->update(['ratecut' => 1]);
+                } else {
+                    $countprocess = Process::where([
+                        'dimonds_id' => $process->dimonds_id,
+                        'designation' => $process->designation,
+                    ])->where('return_weight', '!=', '')->count();
+
+                    $firstProcess = Process::where([
+                        'dimonds_id' => $process->dimonds_id,
+                        'designation' => $process->designation,
+                    ])->where('return_weight', '!=', '')->first();
+
+                    if ($countprocess == 0) {
+                        $price = $weight * $get_rate;
+                    } else {
+                        if ($firstProcess && $firstProcess->id == $process->id) {
+                            $price = $weight * $get_rate;
+                        } else {
+                            if (!empty($previousdata) && $previousdata->price == 0 && $previousdata->ratecut == 1) {
+                                $price = $i_weight * $get_rate;
+                            } else {
+                                $price = 0;
+                            }
+                        }
+                    }
+                }
+
+                $process->update([
+                    'return_date' => $returnDate,
+                    'return_weight' => $r_weight,
+                    'price' => $price ?? 0,
+                    'ratecut' => $rate_cut,
+                ]);
+
+                $check_process = Process::where(['dimonds_id' => $process->dimonds_id])
+                    ->whereNull('return_weight')
+                    ->count();
+
+                if ($check_process == 0 && isset($r_weight) && $process->designation != 'Grading') {
+                    $dimonds->update(['status' => 'Processing']);
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Diamonds returned successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error while returning diamonds: ' . $e->getMessage());
+        }
     }
 }

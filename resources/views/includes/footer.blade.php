@@ -172,6 +172,47 @@
     $(".data-table1").DataTable();
     $("#workerbarcodelist").DataTable();
   });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    function enableAutoDatepicker(selector) {
+      const input = document.querySelector(selector);
+      if (!input) return;
+
+      let pickerOpened = false;
+
+      input.addEventListener('focus', function() {
+        if (!pickerOpened && this.showPicker) {
+          this.showPicker();
+          pickerOpened = true;
+        }
+      });
+
+      input.addEventListener('click', function() {
+        if (!pickerOpened && this.showPicker) {
+          this.showPicker();
+          pickerOpened = true;
+        }
+      });
+
+      input.addEventListener('change', function() {
+        pickerOpened = false;
+      });
+
+      input.addEventListener('blur', function() {
+        pickerOpened = false;
+      });
+    }
+
+    enableAutoDatepicker('#issue_date');
+    enableAutoDatepicker('#start_date');
+    enableAutoDatepicker('#end_date');
+    enableAutoDatepicker('#month');
+    enableAutoDatepicker('#date');
+    enableAutoDatepicker('#invoice_date');
+    enableAutoDatepicker('#due_date');
+    enableAutoDatepicker('#check_in');
+    enableAutoDatepicker('#check_out');
+  });
 </script>
 
 @yield('script')

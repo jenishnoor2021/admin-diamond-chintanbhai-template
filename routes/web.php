@@ -314,6 +314,14 @@ Route::group(['middleware' => ['auth', 'usersession']], function () {
 
     Route::get('/designation/get-rates', [AdminWorkerController::class, 'getRates'])->name('designation.getRates');
     Route::post('/get-process-details', [AdminExpenceController::class, 'getProcessDetails']);
+
+    Route::get('/admin/bulk-issue', [AdminProcessController::class, 'bulkIssue'])->name('admin.bulk.issue');
+    Route::post('/admin/check-diamond-status', [AdminProcessController::class, 'checkDiamondStatus']);
+    Route::post('/admin/bulk-issue/store', [AdminProcessController::class, 'storeBulkIssue'])->name('admin.add.bulk-issue.store');
+
+    Route::get('/admin/bulk-return', [AdminProcessController::class, 'bulkReturn'])->name('admin.bulk.return');
+    Route::post('/admin/check-diamond-status-return', [AdminProcessController::class, 'checkDiamondStatusReturn']);
+    Route::post('/admin/bulk-return/store', [AdminProcessController::class, 'storeBulkReturn'])->name('admin.add.bulk-return.store');
 });
 
 //Clear Cache facade value:
