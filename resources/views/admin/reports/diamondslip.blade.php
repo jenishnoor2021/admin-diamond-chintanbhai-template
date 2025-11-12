@@ -107,17 +107,19 @@
                                 <!-- <th>Barcode</th> -->
                                 <!-- <th>Status</th> -->
                                 <th>Shap</th>
-                                <th>clarity</th>
-                                <th>color</th>
-                                <!-- <th>cut</th> -->
+                                <!-- <th>clarity</th> -->
+                                <!-- <th>color</th> -->
+                                <th>cut</th>
                                 <!-- <th>polish</th> -->
                                 <!-- <th>symmetry</th> -->
+                                <th>Amount</th>
                                 <th>Deliverd</th>
                             </tr>
                         </thead>
 
                         <button type="submit" class="btn btn-outline-warning waves-effect waves-light">Generate PDF</button>
                         <input type="hidden" id="selectedIds" name="selectedIds">
+                        <button type="submit" class="btn btn-outline-info waves-effect waves-light ms-3" formaction="{{ route('admin.diamondslipexcel') }}">Generate Excel</button>
 
                         <tbody>
                             @foreach ($dimonds as $index => $dimond)
@@ -132,11 +134,12 @@
                                 <!-- <td>{!! $dimond->barcode_number !!}</td> -->
                                 <!-- <td>{!! $dimond->status !!}</td> -->
                                 <td>{{ $dimond->shape }}</td>
-                                <td>{{ $dimond->clarity }}</td>
-                                <td>{{ $dimond->color }}</td>
-                                <!-- <td>{{ $dimond->cut }}</td> -->
+                                <!-- <td>{{ $dimond->clarity }}</td>
+                                <td>{{ $dimond->color }}</td> -->
+                                <td>{{ $dimond->cut }}</td>
                                 <!-- <td>{{ $dimond->polish }}</td> -->
                                 <!-- <td>{{ $dimond->symmetry }}</td> -->
+                                <td>{{$dimond->amount}}</td>
                                 <td>{{ \Carbon\Carbon::parse($dimond->delevery_date)->format('d-m-Y') }}</td>
                             </tr>
                             @endforeach

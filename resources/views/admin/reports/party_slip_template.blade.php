@@ -202,8 +202,8 @@ use Carbon\Carbon;
           <th>R W</th>
           <th>P W</th>
           <th>S</th>
-          <th>C</th>
-          <th>Col</th>
+          <th>Cut</th>
+          <th>Amt.</th>
           <th>D Date</th>
         </tr>
       </thead>
@@ -216,8 +216,8 @@ use Carbon\Carbon;
           <td align="center"><?= $proc['weight'] ?></td>
           <td align="center"><?= $proc['required_weight'] ?></td>
           <td align="center"><?= $proc['shape'] ?></td>
-          <td align="center"><?= $proc['clarity'] ?></td>
-          <td align="center"><?= $proc['color'] ?></td>
+          <td align="center"><?= $proc['cut'] ?></td>
+          <td align="center"><?= $proc['amount'] ?></td>
           <td align="center"><?= \Carbon\Carbon::parse($proc['delivery_date'])->format('d-m-Y') ?></td>
         </tr>
         <?php $t_w += $proc['weight'];

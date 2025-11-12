@@ -322,6 +322,8 @@ Route::group(['middleware' => ['auth', 'usersession']], function () {
     Route::get('/admin/bulk-return', [AdminProcessController::class, 'bulkReturn'])->name('admin.bulk.return');
     Route::post('/admin/check-diamond-status-return', [AdminProcessController::class, 'checkDiamondStatusReturn']);
     Route::post('/admin/bulk-return/store', [AdminProcessController::class, 'storeBulkReturn'])->name('admin.add.bulk-return.store');
+
+    Route::post('/admin/diamondslip-excel', [AdminExpenceController::class, 'diamondSlipExcel'])->name('admin.diamondslipexcel');
 });
 
 //Clear Cache facade value:
